@@ -1,0 +1,58 @@
+### Create Notification (required fields)
+POST http://localhost:8090/notifications
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "title": "New Message",
+  "message": "You have a new message waiting."
+}
+
+> {%
+  response.status() == 200
+%}
+
+
+### Create Notification (with optional fields)
+POST http://localhost:8090/notifications
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "title": "System Alert",
+  "message": "Your password will expire soon.",
+  "read": false
+}
+
+> {%
+  response.status() == 200
+%}
+
+
+### Get Notification by ID
+GET http://localhost:8090/notifications/user123
+
+> {%
+  response.status() == 200
+%}
+
+### List All Notifications
+GET http://localhost:8090/notifications
+
+> {%
+  response.status() == 200
+%}
+
+
+### Mark Notification as Read
+PATCH http://localhost:8090/notifications/{{notificationId}}
+Content-Type: application/json
+
+{
+  "read": true
+}
+
+> {%
+  response.status() == 200
+%}
+
