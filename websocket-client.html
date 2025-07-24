@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-entry.received {
+            color: #28a745;
+        }
+        .log-entry.sent {
+            color: #007bff;
+        }
+        .log-entry.error {
+            color: #dc3545;
+        }
+        .log-entry.info {
+            color: #6c757d;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .clear-btn {
+            background-color: #6c757d;
+        }
+        .clear-btn:hover {
+            background-color: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test Client</h1>
+
+    <div class="container">
+        <h2>Connection</h2>
+        <div class="form-group">
+            <label for="serverUrl">Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:8090">
+        </div>
+        <div class="form-group">
+            <label for="authToken">JWT Token:</label>
+            <input type="text" id="authToken" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c">
+        </div>
+        <div id="status" class="status disconnected">
+            Status: Disconnected
+        </div>
+        <button id="connectBtn" onclick="connect()">Connect</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        <button onclick="sendPing()">Send Ping</button>
+        <button class="clear-btn" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>Send Custom Message</h2>
+            <div class="form-group">
+                <label for="messageType">Message Type:</label>
+                <select id="messageType">
+                    <option value="chat">Chat</option>
+                    <option value="notification">Notification</option>
+                    <option value="system">System</option>
+                    <option value="update">Update</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="messageData">Message Data (JSON):</label>
+                <textarea id="messageData" placeholder='{"message": "Hello World!", "sender": "client"}'></textarea>
+            </div>
+            <button onclick="sendCustomMessage()">Send Message</button>
+        </div>
+
+        <div class="container">
+            <h2>Quick Actions</h2>
+            <div class="form-group">
+                <label for="quickUserId">Target User ID:</label>
+                <input type="text" id="quickUserId" value="user456" placeholder="Enter user ID">
+            </div>
+            <button onclick="sendQuickNotification()">Send Quick Notification</button>
+            <button onclick="sendQuickChat()">Send Quick Chat</button>
+            <button onclick="checkUserStatus()">Check User Status</button>
+            <button onclick="getConnectedUsers()">Get Connected Users</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Message Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let isConnected = false;
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logElement.appendChild(entry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            isConnected = connected;
+            const statusElement = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                statusElement.textContent = 'Status: Connected';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.textContent = 'Status: Disconnected';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const authToken = document.getElementById('authToken').value;
+
+            if (!authToken) {
+                alert('Please provide a JWT token');
+                return;
+            }
+
+            log(`Connecting to ${serverUrl}...`, 'info');
+
+            socket = io(serverUrl, {
+                extraHeaders: {
+                    'Authorization': `Bearer ${authToken}`
+                },
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                log('Connected to WebSocket server', 'received');
+                updateStatus(true);
+            });
+
+            socket.on('authenticated', (data) => {
+                log(`Authenticated: ${JSON.stringify(data)}`, 'received');
+            });
+
+            socket.on('message', (data) => {
+                log(`Message received: ${JSON.stringify(data)}`, 'received');
+            });
+
+            socket.on('pong', (data) => {
+                log(`Pong received: ${JSON.stringify(data)}`, 'received');
+            });
+
+            socket.on('disconnect', (reason) => {
+                log(`Disconnected: ${reason}`, 'error');
+                updateStatus(false);
+            });
+
+            socket.on('connect_error', (error) => {
+                log(`Connection error: ${error.message}`, 'error');
+                updateStatus(false);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function sendPing() {
+            if (!socket || !isConnected) {
+                alert('Not connected to server');
+                return;
+            }
+
+            socket.emit('ping');
+            log('Ping sent', 'sent');
+        }
+
+        function sendCustomMessage() {
+            if (!socket || !isConnected) {
+                alert('Not connected to server');
+                return;
+            }
+
+            const messageType = document.getElementById('messageType').value;
+            const messageDataText = document.getElementById('messageData').value;
+
+            let messageData;
+            try {
+                messageData = messageDataText ? JSON.parse(messageDataText) : {};
+            } catch (e) {
+                alert('Invalid JSON in message data');
+                return;
+            }
+
+            const message = {
+                type: messageType,
+                data: messageData
+            };
+
+            socket.emit('custom_message', message);
+            log(`Custom message sent: ${JSON.stringify(message)}`, 'sent');
+        }
+
+        async function sendQuickNotification() {
+            const userId = document.getElementById('quickUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/websocket/notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${document.getElementById('authToken').value}`
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        title: 'Test Notification',
+                        body: 'This is a test notification from the WebSocket client',
+                        data: {
+                            category: 'test',
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                log(`Notification API response: ${JSON.stringify(result)}`, 'info');
+            } catch (error) {
+                log(`Error sending notification: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendQuickChat() {
+            const userId = document.getElementById('quickUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+
+            try {
+                const response = await fetch('/websocket/message/user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${document.getElementById('authToken').value}`
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        type: 'chat',
+                        data: {
+                            message: 'Hello from the WebSocket test client!',
+                            sender: 'WebSocket Client',
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                log(`Chat message API response: ${JSON.stringify(result)}`, 'info');
+            } catch (error) {
+                log(`Error sending chat message: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkUserStatus() {
+            const userId = document.getElementById('quickUserId').value;
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/websocket/users/${userId}/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${document.getElementById('authToken').value}`
+                    }
+                });
+
+                const result = await response.json();
+                log(`User status response: ${JSON.stringify(result)}`, 'info');
+            } catch (error) {
+                log(`Error checking user status: ${error.message}`, 'error');
+            }
+        }
+
+        async function getConnectedUsers() {
+            try {
+                const response = await fetch('/websocket/users/connected', {
+                    headers: {
+                        'Authorization': `Bearer ${document.getElementById('authToken').value}`
+                    }
+                });
+
+                const result = await response.json();
+                log(`Connected users response: ${JSON.stringify(result)}`, 'info');
+            } catch (error) {
+                log(`Error getting connected users: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Initialize
+        updateStatus(false);
+        log('WebSocket client initialized', 'info');
+        log('Sample JWT tokens available in the auth token field', 'info');
+        log('User IDs: user123, user456, user789', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+### WebSocket Testing Endpoints
+
+@baseUrl = http://localhost:8090
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+@authToken2 = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyNDU2IiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjJ9.4Adcj3UFYzPUVaVF43FmMab6RlaQD8A9V8wFzzht-KQ
+
+### Send Message to Specific User
+POST {{baseUrl}}/websocket/message/user
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "userId": "user123",
+  "type": "chat",
+  "data": {
+    "message": "Hello from HTTP API!",
+    "sender": "system"
+  }
+}
+
+### Send Notification to User
+POST {{baseUrl}}/websocket/notification
+Content-Type: application/json
+Authorization: {{authToken2}}
+
+{
+  "userId": "user123",
+  "title": "New Notification",
+  "body": "You have a new message",
+  "data": {
+    "category": "message",
+    "priority": "high"
+  }
+}
+
+### Send Message to Multiple Users
+POST {{baseUrl}}/websocket/message/users
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "userIds": ["user123", "user456", "user789"],
+  "type": "announcement",
+  "data": {
+    "title": "System Maintenance",
+    "message": "The system will be under maintenance in 10 minutes"
+  }
+}
+
+### Broadcast Message to All Users
+POST {{baseUrl}}/websocket/message/broadcast
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "type": "system",
+  "data": {
+    "message": "Welcome to our platform!",
+    "level": "info"
+  }
+}
+
+### Get All Connected Users
+GET {{baseUrl}}/websocket/users/connected
+Authorization: {{authToken}}
+
+### Check if Specific User is Connected
+GET {{baseUrl}}/websocket/users/user123/status
+Authorization: {{authToken}}
+
+### Get My Connection Status
+GET {{baseUrl}}/websocket/me/status
+Authorization: {{authToken}}
+
+### Disconnect Specific User
+DELETE {{baseUrl}}/websocket/users/user123/disconnect
+Authorization: {{authToken}}
+
+### WebSocket Connection Test (JavaScript Client Example)
+# You can use this in browser console or Node.js script:
+/*
+const socket = io('http://localhost:8090', {
+  extraHeaders: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+  }
+});
+
+socket.on('connect', () => {
+  console.log('Connected to WebSocket server');
+});
+
+socket.on('authenticated', (data) => {
+  console.log('Authenticated:', data);
+});
+
+socket.on('message', (data) => {
+  console.log('Received message:', data);
+});
+
+socket.on('disconnect', () => {
+  console.log('Disconnected from WebSocket server');
+});
+
+// Send ping
+socket.emit('ping');
+
+socket.on('pong', (data) => {
+  console.log('Received pong:', data);
+});
+*/
+
+### Sample JWT Tokens for Testing
+
+# User 123
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+# User 456
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyNDU2IiwibmFtZSI6IkphbmUgU21pdGgiLCJpYXQiOjE1MTYyMzkwMjJ9.4Adcj3UFYzPUVaVF43FmMab6RlaQD8A9V8wFzzht-KQ
+
+# User 789
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyNzg5IiwibmFtZSI6IkJvYiBKb2huc29uIiwiaWF0IjoxNTE2MjM5MDIyfQ.onuUeVV4KP5zV8TLMVhQUedo9P9zGUz2hKhP0YoWJIQ
