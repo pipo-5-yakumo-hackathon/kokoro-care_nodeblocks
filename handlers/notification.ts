@@ -18,6 +18,23 @@ export const createNotification: primitives.AsyncRouteHandler<
   const res = await context.db.notifications.insertOne(entity);
   if (!res.insertedId) return err(new NodeblocksError(400, 'Notification failed'));
 
+  // Send WebSocket notification
+  try {
+    // Dynamically import to avoid circular dependency if any
+    const { getWebSocketService } = await import('../services/websocket');
+    const webSocketService = getWebSocketService();
+    // Send notification to the user
+    webSocketService.sendNotification(
+      params.requestBody?.userId || '',
+      params.requestBody?.title || 'New Notification',
+      params.requestBody?.message || '',
+      entity // pass the whole entity as data for flexibility
+    );
+  } catch (e) {
+    console.error('WebSocket notification failed:', e);
+    // Do not fail the request if WebSocket fails
+  }
+
   return ok(mergeData(payload, { notificationId: entity.id }));
 };
 

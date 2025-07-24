@@ -3,7 +3,7 @@ POST http://localhost:8090/notifications
 Content-Type: application/json
 
 {
-  "userId": "user123",
+  "userId": "1",
   "title": "New Message",
   "message": "You have a new message waiting."
 }
