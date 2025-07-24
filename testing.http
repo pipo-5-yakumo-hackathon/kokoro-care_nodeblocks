@@ -4,8 +4,8 @@ Content-Type: application/json
 
 {
   "userId": "1",
-  "title": "New Message",
-  "message": "You have a new message waiting."
+  "title": "Caregiver found",
+  "message": "Aboba"
 }
 
 > {%
