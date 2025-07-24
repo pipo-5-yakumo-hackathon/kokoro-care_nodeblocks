@@ -53,7 +53,7 @@ export const sendMessageToUser: primitives.AsyncRouteHandler<
       return ok(
         mergeData(payload, {
           success: true,
-          message: `Message sent to user ${userId}`,
+          message: `ADSDASSADMessage sent to user ${userId}`,
           timestamp: new Date(),
         }),
       );

@@ -24,13 +24,9 @@ Content-Type: application/json
 Authorization: {{authToken2}}
 
 {
-  "userId": "user123",
+  "userId": "1",
   "title": "New Notification",
-  "body": "You have a new message",
-  "data": {
-    "category": "message",
-    "priority": "high"
-  }
+  "body": "You have a new message"
 }
 
 ### Send Message to Multiple Users

@@ -239,6 +239,7 @@ export class WebSocketService {
       data: {
         title,
         body,
+        userId,
         ...data
       }
     });
